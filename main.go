@@ -46,12 +46,6 @@ func main() {
 	router.POST("/initiatePayment", initiatePayment)
 	router.OPTIONS("/initiatePayment", preflight)
 
-	router.POST("/retryPayment", retryPayment)
-	router.OPTIONS("/retryPayment", preflight)
-
-	router.POST("/completePayment", completePayment)
-	router.OPTIONS("/completePayment", preflight)
-
 	router.Run(configuration.RouterUrl)
 
 }
@@ -106,8 +100,9 @@ func initiatePayment(c *gin.Context) {
 			Enabled: stripe.Bool(true),
 		},
 	}
+	params.SetIdempotencyKey("RZzYwj0S5rssCYTo") //@todo dynamic
 	result, err := paymentintent.New(params)
-
+	//@todo inspect error, determine whether to retry
 	if nil != err {
 		var stripeStatus StripeApiStatus
 		errmsg := fmt.Sprint(err)
@@ -122,18 +117,6 @@ func initiatePayment(c *gin.Context) {
 
 	result.ClientSecret = "" // don't sent the secret back to the caller
 	c.IndentedJSON(http.StatusOK, result)
-}
-
-func retryPayment(c *gin.Context) {
-	addHeaders(c)
-	//@todo retry a payment using paymentIntent ID
-	c.IndentedJSON(http.StatusOK, gin.H{"result": "retry"})
-}
-
-func completePayment(c *gin.Context) {
-	addHeaders(c)
-	//@todo final submit for payment
-	c.IndentedJSON(http.StatusOK, gin.H{"result": "capture"})
 }
 
 func loadConfiguration() Configuration {
