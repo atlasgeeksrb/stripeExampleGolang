@@ -5,10 +5,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stripe/stripe-go/v73"
 )
 
 func TestGetPayment(t *testing.T) {
@@ -35,6 +37,8 @@ func TestGetPayment(t *testing.T) {
 }
 
 func TestInitiatePayment(t *testing.T) {
+	configuration = loadConfiguration()
+
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	initiatePayment(c)
@@ -44,16 +48,17 @@ func TestInitiatePayment(t *testing.T) {
 		t.Fatal(readerr)
 	}
 
-	want := gin.H{
-		"result": "initiate",
-	}
-	var got gin.H
+	var got stripe.PaymentIntent
 	err := json.Unmarshal(responseData, &got)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, want, got)
+	ref := reflect.ValueOf(got.ID)
+	if ref.Kind() != reflect.String {
+		assert.Fail(t, "Payment Intent ID not found in response")
+	}
+
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 

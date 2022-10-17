@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stripe/stripe-go/v73"
@@ -16,10 +17,10 @@ type CheckoutData struct {
 }
 
 type Configuration struct {
-	RouterUrl string
-	ReactUrl  string
-	ApiMode   string
-	StripeKey string
+	RouterUrl      string
+	AcceptedOrigin string
+	ApiMode        string
+	StripeKey      string
 }
 
 type StripeApiStatus struct {
@@ -39,8 +40,8 @@ func main() {
 	router := gin.Default()
 
 	// add OPTIONS for each route that is publicly accessible
-	router.GET("/payment", getPayment)
-	router.OPTIONS("/payment", preflight)
+	router.GET("/payment/:id", getPayment)
+	router.OPTIONS("/payment/:id", preflight)
 
 	router.POST("/initiatePayment", initiatePayment)
 	router.OPTIONS("/initiatePayment", preflight)
@@ -56,18 +57,37 @@ func main() {
 }
 
 func preflight(c *gin.Context) {
-	//@todo add OPTIONS headers here
+	c.Header("Access-Control-Allow-Origin", configuration.AcceptedOrigin) //"*"
+	c.Header("Access-Control-Allow-Headers", "access-control-allow-origin, access-control-allow-headers,x-auth-token,x-auth-user,content-type")
+	c.Header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST")
 	c.JSON(http.StatusOK, struct{}{})
 }
 
 func addHeaders(c *gin.Context) {
-	//@todo add HTTP headers here
+	c.Header("Access-Control-Allow-Origin", configuration.AcceptedOrigin) //"*"
+	c.Header("Access-Control-Expose-Headers", "x-auth-token, x-auth-user")
 }
 
 func getPayment(c *gin.Context) {
 	addHeaders(c)
-	//@todo get payment status from stripe using paymentIntent ID
-	c.IndentedJSON(http.StatusOK, gin.H{"result": "get"})
+	paymentId := c.Param("id")
+	if len(strings.TrimSpace(paymentId)) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "payment intent id not found"})
+		return
+	}
+
+	stripe.Key = configuration.StripeKey
+	pi, err := paymentintent.Get(
+		paymentId,
+		nil,
+	)
+	if nil != err {
+		errmsg := fmt.Sprint(err)
+		c.JSON(http.StatusNotFound, gin.H{"error": errmsg})
+		return
+	}
+	pi.ClientSecret = "" // don't sent the secret back to the caller
+	c.JSON(http.StatusOK, pi)
 }
 
 func initiatePayment(c *gin.Context) {
@@ -100,7 +120,8 @@ func initiatePayment(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, gin.H{"paymentIntentId": result.ID})
+	result.ClientSecret = "" // don't sent the secret back to the caller
+	c.IndentedJSON(http.StatusOK, result)
 }
 
 func retryPayment(c *gin.Context) {
