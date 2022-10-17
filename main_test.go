@@ -22,7 +22,76 @@ func TestGetPayment(t *testing.T) {
 	}
 
 	want := gin.H{
-		"result": "aok",
+		"result": "get",
+	}
+	var got gin.H
+	err := json.Unmarshal(responseData, &got)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, want, got)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestInitiatePayment(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	initiatePayment(c)
+
+	responseData, readerr := ioutil.ReadAll(w.Body) // []byte
+	if readerr != nil {
+		t.Fatal(readerr)
+	}
+
+	want := gin.H{
+		"result": "initiate",
+	}
+	var got gin.H
+	err := json.Unmarshal(responseData, &got)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, want, got)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestRetryPayment(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	retryPayment(c)
+
+	responseData, readerr := ioutil.ReadAll(w.Body) // []byte
+	if readerr != nil {
+		t.Fatal(readerr)
+	}
+
+	want := gin.H{
+		"result": "retry",
+	}
+	var got gin.H
+	err := json.Unmarshal(responseData, &got)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, want, got)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestCompletePayment(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	completePayment(c)
+
+	responseData, readerr := ioutil.ReadAll(w.Body) // []byte
+	if readerr != nil {
+		t.Fatal(readerr)
+	}
+
+	want := gin.H{
+		"result": "capture",
 	}
 	var got gin.H
 	err := json.Unmarshal(responseData, &got)
