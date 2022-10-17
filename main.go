@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stripe/stripe-go/v73"
+	"github.com/stripe/stripe-go/v73/paymentintent"
 )
 
 type CheckoutData struct {
@@ -16,6 +19,13 @@ type Configuration struct {
 	RouterUrl string
 	ReactUrl  string
 	ApiMode   string
+	StripeKey string
+}
+
+type StripeApiStatus struct {
+	Status  int64  `json:"status"`
+	Message string `json:"message"`
+	Type    string `json:"type"`
 }
 
 var configuration Configuration
@@ -62,8 +72,34 @@ func getPayment(c *gin.Context) {
 
 func initiatePayment(c *gin.Context) {
 	addHeaders(c)
-	//@todo get paymentIntent from stripe
-	c.IndentedJSON(http.StatusOK, gin.H{"result": "initiate"})
+
+	// Keys- https://dashboard.stripe.com/apikeys
+	stripe.Key = configuration.StripeKey
+	params := &stripe.PaymentIntentParams{
+		Amount:   stripe.Int64(10100), // this is $101 = 10,100 cents
+		Currency: stripe.String(string(stripe.CurrencyUSD)),
+		// can also set payment method types:
+		// PaymentMethodTypes: []*string{
+		// 	stripe.String("card"),
+		// },
+		AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
+			Enabled: stripe.Bool(true),
+		},
+	}
+	result, err := paymentintent.New(params)
+
+	if nil != err {
+		var stripeStatus StripeApiStatus
+		errmsg := fmt.Sprint(err)
+		marshalErr := json.Unmarshal([]byte(errmsg), &stripeStatus)
+		if nil != marshalErr {
+			c.IndentedJSON(http.StatusBadRequest, errmsg)
+		} else {
+			c.IndentedJSON(int(stripeStatus.Status), stripeStatus)
+		}
+		return
+	}
+	c.IndentedJSON(http.StatusOK, result)
 }
 
 func retryPayment(c *gin.Context) {
