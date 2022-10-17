@@ -1,19 +1,31 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
-
-var routerUrl string = "localhost:8080"
 
 type CheckoutData struct {
 	ClientSecret string `json:"client_secret"`
 }
 
+type Configuration struct {
+	RouterUrl string
+	ReactUrl  string
+	ApiMode   string
+}
+
+var configuration Configuration
+
 func main() {
 
+	configuration = loadConfiguration()
+	if configuration.ApiMode == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	router := gin.Default()
 
 	// add OPTIONS for each route that is publicly accessible
@@ -29,7 +41,7 @@ func main() {
 	router.POST("/completePayment", completePayment)
 	router.OPTIONS("/completePayment", preflight)
 
-	router.Run(routerUrl)
+	router.Run(configuration.RouterUrl)
 
 }
 
@@ -64,4 +76,23 @@ func completePayment(c *gin.Context) {
 	addHeaders(c)
 	//@todo final submit for payment
 	c.IndentedJSON(http.StatusOK, gin.H{"result": "capture"})
+}
+
+func loadConfiguration() Configuration {
+	var configuration Configuration
+
+	configpath, configerr := os.Getwd()
+	if nil != configerr {
+		panic(configerr)
+	}
+
+	file, _ := os.Open(configpath + string(os.PathSeparator) + "config.json")
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	err := decoder.Decode(&configuration)
+	if err != nil {
+		panic(err)
+	}
+	return configuration
 }
