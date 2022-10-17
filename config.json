@@ -1,6 +1,6 @@
 {
     "RouterUrl": "localhost:8080",
-    "CallerUrl": "http://localhost:3000",
+    "AcceptedOrigin": "http://localhost:3000",
     "ApiMode": "debug",
     "StripeKey": ""
 }
