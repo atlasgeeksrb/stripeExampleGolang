@@ -45,13 +45,13 @@ func addHeaders(c *gin.Context) {
 func getPayment(c *gin.Context) {
 	addHeaders(c)
 	//@todo get payment status from stripe using paymentIntent ID
-	c.IndentedJSON(http.StatusOK, gin.H{"result": "aok"})
+	c.IndentedJSON(http.StatusOK, gin.H{"result": "get"})
 }
 
 func initiatePayment(c *gin.Context) {
 	addHeaders(c)
 	//@todo get paymentIntent from stripe
-	c.IndentedJSON(http.StatusOK, gin.H{"result": "aok"})
+	c.IndentedJSON(http.StatusOK, gin.H{"result": "initiate"})
 }
 
 func retryPayment(c *gin.Context) {
