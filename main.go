@@ -99,7 +99,8 @@ func initiatePayment(c *gin.Context) {
 		}
 		return
 	}
-	c.IndentedJSON(http.StatusOK, result)
+
+	c.IndentedJSON(http.StatusOK, gin.H{"paymentIntentId": result.ID})
 }
 
 func retryPayment(c *gin.Context) {
