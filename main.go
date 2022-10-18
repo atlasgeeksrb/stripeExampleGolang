@@ -80,7 +80,6 @@ func getPayment(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": errmsg})
 		return
 	}
-	pi.ClientSecret = "" // don't sent the secret back to the caller
 	c.JSON(http.StatusOK, pi)
 }
 
@@ -115,7 +114,6 @@ func initiatePayment(c *gin.Context) {
 		return
 	}
 
-	result.ClientSecret = "" // don't sent the secret back to the caller
 	c.IndentedJSON(http.StatusOK, result)
 }
 
