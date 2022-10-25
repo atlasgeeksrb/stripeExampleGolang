@@ -29,6 +29,10 @@ type StripeApiStatus struct {
 	Type    string `json:"type"`
 }
 
+type PaymentRequest struct {
+	TotalAmount int64 `json:"totalAmount"`
+}
+
 var configuration Configuration
 
 func main() {
@@ -86,10 +90,19 @@ func getPayment(c *gin.Context) {
 func initiatePayment(c *gin.Context) {
 	addHeaders(c)
 
+	// get the the payment amount
+	var pmtRequest PaymentRequest
+	if err := c.BindJSON(&pmtRequest); err != nil {
+		errmsg := fmt.Sprint(err)
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": errmsg})
+		return
+	}
+
 	// Keys- https://dashboard.stripe.com/apikeys
 	stripe.Key = configuration.StripeKey
 	params := &stripe.PaymentIntentParams{
-		Amount:   stripe.Int64(10100), // this is $101 = 10,100 cents
+		Amount: stripe.Int64(pmtRequest.TotalAmount * 100),
+		// Amount is in cents $101 = 10,100 cents
 		Currency: stripe.String(string(stripe.CurrencyUSD)),
 		// can also set payment method types:
 		// PaymentMethodTypes: []*string{
